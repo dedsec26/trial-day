@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const Users = require("./models/users");
+const Creds = require("./models/credentials");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -86,7 +87,14 @@ app.post("/cred/buy", async (req, res) => {
     } else {
       availability.tokens = availability.tokens - req.body.creds;
       await availability.save();
-      res.send(`here are your requested ${req.body.creds}`);
+      const finData = [];
+      for (let i; i <= req.body.creds; i++) {
+        let data = await Creds.findOne({ status: 1 });
+        data.status = 0;
+        data.save();
+        finData.push(data);
+      }
+      res.send(finData);
     }
   }
 });
