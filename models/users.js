@@ -14,6 +14,10 @@ const usersSchema = new Schema({
     type: String,
     required: true,
   },
+  tokens: {
+    type: Number,
+    default: 0,
+  },
 });
 
 module.exports = Mongoose.model("Users", usersSchema);

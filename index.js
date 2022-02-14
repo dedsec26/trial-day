@@ -38,3 +38,55 @@ app.post("/register", async (req, res) => {
     res.send("user successfully created!!!");
   }
 });
+
+// Logging in portion is made only because it can be copied from the
+// buying tokens sections. Other than that it has no purpose.
+app.post("/login", async (req, res) => {
+  const availability = await Users.findOne({
+    email: req.body.email,
+    pass: req.body.pass,
+  });
+  console.log(availability);
+  if (!availability) {
+    res.send("Wrong Credintials. Please login with correct details");
+  } else {
+    res.send(`${availability.name} succesfully logged in!!!`);
+  }
+});
+
+app.post("/tokens/add", async (req, res) => {
+  const availability = await Users.findOne({
+    email: req.body.email,
+    pass: req.body.pass,
+  });
+  if (!availability) {
+    res.send("Wrong Credintials. Please login with correct details");
+  } else {
+    availability.tokens = availability.tokens + req.body.amount;
+    await availability.save();
+    res.send(
+      `${availability.name} succesfully added ${req.body.amount} tokens!!!`
+    );
+  }
+});
+
+app.post("/cred/buy", async (req, res) => {
+  const availability = await Users.findOne({
+    email: req.body.email,
+    pass: req.body.pass,
+  });
+  if (!availability) {
+    res.send("Wrong Credintials. Please login with correct details");
+  } else {
+    if (availability.tokens < req.body.creds) {
+      needed = req.body.creds - availability.tokens;
+      res.send(
+        `You do not have enough credits to buy ${req.body.creds} credentials. You need ${needed} more tokens. Please recharge first.`
+      );
+    } else {
+      availability.tokens = availability.tokens - req.body.creds;
+      await availability.save();
+      res.send(`here are your requested ${req.body.creds}`);
+    }
+  }
+});
