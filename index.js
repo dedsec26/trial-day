@@ -88,11 +88,12 @@ app.post("/cred/buy", async (req, res) => {
       availability.tokens = availability.tokens - req.body.creds;
       await availability.save();
       const finData = [];
-      for (let i; i <= req.body.creds; i++) {
+      for (let i = 0; i < req.body.creds; i++) {
+        // console.log("here");
         let data = await Creds.findOne({ status: 1 });
+        finData.push(data);
         data.status = 0;
         data.save();
-        finData.push(data);
       }
       res.send(finData);
     }
