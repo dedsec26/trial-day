@@ -18,17 +18,29 @@ mongoose
   .then(() => console.log("Mongo Connection Successful"))
   .catch((err) => console.log(err.message));
 
-app.listen(3000, () => console.log("Server Started on : 3000"));
+app.listen(4000, () => console.log("Server Started on : 4000"));
 
 app.get("/register", (req, res) => res.send("Success"));
+app.get("/data/:email", async (req, res) => {
+  // console.log(req.params.email);
+  try {
+    let data = await Users.findOne({ email: req.params.email });
+    res.json(data);
+  } catch (error) {
+    res.send({ message: "Server Error." });
+  }
+});
 
 app.post("/register", async (req, res) => {
-  //   console.log(req.body.name);
-  //   console.log(req.body.email);
-  //   console.log(req.body.pass);
+  // console.log(req.body);
+  // res.json(req.body);
+  // console.log(req.body.name);
+  console.log(req.body.email);
+  // console.log(req.body.pass);
   const availability = await Users.findOne({ email: req.body.email });
+  // console.log(availability);
   if (availability) {
-    res.send("Email already exist in the database. Please login.");
+    res.json("Email already exist in the database. Please login.");
   } else {
     let user = new Users({ name: req.body.name });
     user.name = req.body.name;
@@ -36,7 +48,7 @@ app.post("/register", async (req, res) => {
     user.pass = req.body.pass;
     console.log(user);
     await user.save();
-    res.send("user successfully created!!!");
+    res.json("user successfully created!!!");
   }
 });
 
@@ -49,53 +61,58 @@ app.post("/login", async (req, res) => {
   });
   console.log(availability);
   if (!availability) {
-    res.send("Wrong Credintials. Please login with correct details");
+    res.json("Wrong Credintials. Please login with correct details");
   } else {
-    res.send(`${availability.name} succesfully logged in!!!`);
+    res.json(`${availability.name} succesfully logged in!!!`);
   }
 });
 
 app.post("/tokens/add", async (req, res) => {
-  const availability = await Users.findOne({
-    email: req.body.email,
-    pass: req.body.pass,
-  });
+  // console.log(req.body);
+  // console.log(typeof req.body.amount);
+  let amount = parseInt(req.body.amount);
+  const availability = await Users.findById(req.body.id);
   if (!availability) {
-    res.send("Wrong Credintials. Please login with correct details");
+    res.json("Account does not exist.");
   } else {
-    availability.tokens = availability.tokens + req.body.amount;
+    availability.tokens = availability.tokens + amount;
     await availability.save();
-    res.send(
-      `${availability.name} succesfully added ${req.body.amount} tokens!!!`
-    );
+    res.json(`You succesfully added ${req.body.amount} tokens!!!`);
   }
 });
 
 app.post("/cred/buy", async (req, res) => {
-  const availability = await Users.findOne({
-    email: req.body.email,
-    pass: req.body.pass,
-  });
+  const availability = await Users.findById(req.body.id);
+  console.log(req.body.id);
   if (!availability) {
-    res.send("Wrong Credintials. Please login with correct details");
+    res.status(400).json("Account does not exist.");
   } else {
     if (availability.tokens < req.body.creds) {
       needed = req.body.creds - availability.tokens;
-      res.send(
-        `You do not have enough credits to buy ${req.body.creds} credentials. You need ${needed} more tokens. Please recharge first.`
-      );
+      res
+        .status(400)
+        .json(
+          `You do not have enough credits to buy ${req.body.creds} credentials. You need ${needed} more tokens. Please topup first.`
+        );
     } else {
       availability.tokens = availability.tokens - req.body.creds;
       await availability.save();
-      const finData = [];
-      for (let i = 0; i < req.body.creds; i++) {
-        // console.log("here");
-        let data = await Creds.findOne({ status: 1 });
-        finData.push(data);
-        data.status = 0;
-        data.save();
-      }
-      res.send(finData);
+      // const finData = [];
+      // for (let i = 0; i < req.body.creds; i++) {
+      //   // console.log("here");
+      //   let data = await Creds.find({ status: 1 }).limit(req.body.creds);
+      //   finData.push(data);
+      //   // data.status = 0;
+      //   // data.save();
+      // }
+      let data = await Creds.find({ status: 1 }).limit(req.body.creds);
+      console.log(data);
+      // for (const i of data) {
+      //   i.status = 0;
+      //   i.save();
+      // }
+
+      res.json(data);
     }
   }
 });

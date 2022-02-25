@@ -12,7 +12,7 @@ const usersSchema = new Schema({
   },
   pass: {
     type: String,
-    required: true,
+    required: false,
   },
   tokens: {
     type: Number,
