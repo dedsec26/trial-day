@@ -79,6 +79,7 @@ app.post("/login", async (req, res) => {
     },
     "hyc8uXLKdx5DfsfnJmTLD6qdkAKLm3vA"
   );
+  console.log("test");
   res.json({
     message: `succesfully logged in!!!`,
     jwtToken,
