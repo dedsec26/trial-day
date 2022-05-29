@@ -3,6 +3,7 @@ const app = express();
 const mongoose = require("mongoose");
 const Users = require("./models/users");
 const Creds = require("./models/credentials");
+const jwt = require("jsonwebtoken");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -55,16 +56,34 @@ app.post("/register", async (req, res) => {
 // Logging in portion is made only because it can be copied from the
 // buying tokens sections. Other than that it has no purpose.
 app.post("/login", async (req, res) => {
-  const availability = await Users.findOne({
-    email: req.body.email,
-    pass: req.body.pass,
+  // const availability = await Users.findOne({
+  //   email: req.body.email,
+  //   pass: req.body.pass,
+  // });
+  // console.log(availability);
+  // if (!availability) {
+  // res.json("Wrong Credintials. Please login with correct details");
+  // } else {
+
+  const role = "user";
+  const userId = "1";
+  const jwtToken = jwt.sign(
+    {
+      foo: "bar",
+      "https://hasura.io/jwt/claims": {
+        "x-hasura-allowed-roles": ["admin", "user", "artist"],
+        "x-hasura-default-role": role,
+        "x-hasura-user-id": userId,
+        "x-hasura-wallet-id": "xxx123",
+      },
+    },
+    "hyc8uXLKdx5DfsfnJmTLD6qdkAKLm3vA"
+  );
+  res.json({
+    message: `succesfully logged in!!!`,
+    jwtToken,
   });
-  console.log(availability);
-  if (!availability) {
-    res.json("Wrong Credintials. Please login with correct details");
-  } else {
-    res.json(`${availability.name} succesfully logged in!!!`);
-  }
+  // }
 });
 
 app.post("/tokens/add", async (req, res) => {
@@ -82,8 +101,9 @@ app.post("/tokens/add", async (req, res) => {
 });
 
 app.post("/cred/buy", async (req, res) => {
+  req.setTimeout(10000);
   const availability = await Users.findById(req.body.id);
-  console.log(req.body.id);
+  // console.log(req.body.id);
   if (!availability) {
     res.status(400).json("Account does not exist.");
   } else {
@@ -95,8 +115,6 @@ app.post("/cred/buy", async (req, res) => {
           `You do not have enough credits to buy ${req.body.creds} credentials. You need ${needed} more tokens. Please topup first.`
         );
     } else {
-      availability.tokens = availability.tokens - req.body.creds;
-      await availability.save();
       // const finData = [];
       // for (let i = 0; i < req.body.creds; i++) {
       //   // console.log("here");
@@ -105,14 +123,25 @@ app.post("/cred/buy", async (req, res) => {
       //   // data.status = 0;
       //   // data.save();
       // }
-      let data = await Creds.find({ status: 1 }).limit(req.body.creds);
-      console.log(data);
-      // for (const i of data) {
-      //   i.status = 0;
-      //   i.save();
-      // }
+      let count = await Creds.countDocuments({ status: 1 });
+      if (count < req.body.creds) {
+        res
+          .status(400)
+          .json(
+            `You have requested ${req.body.creds} credentials and we only have ${count} in store. Try reducing your requested amount.`
+          );
+      } else {
+        let data = await Creds.find({ status: 1 }).limit(req.body.creds);
+        availability.tokens = availability.tokens - req.body.creds;
+        await availability.save();
+        console.log(data);
+        // for (const i of data) {
+        //   i.status = 0;
+        //   i.save();
+        // }
 
-      res.json(data);
+        res.json(data);
+      }
     }
   }
 });
